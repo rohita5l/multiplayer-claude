@@ -20,9 +20,14 @@ export function SessionWorkspace({ session, me }: { session: { id: string; title
 
   // When Claude finishes addressing comments, the owner's client marks them resolved.
   useEffect(() => {
-    if (!state.commentsDone || !isOwner) return;
-    void comments.setStatus(state.commentsDone.ids, "resolved");
-    toast.success(`Resolved ${state.commentsDone.ids.length} comment${state.commentsDone.ids.length === 1 ? "" : "s"}`);
+    if (!state.commentsDone) return;
+    if (isOwner) {
+      void comments.setStatus(state.commentsDone.ids, "resolved");
+      toast.success(`Resolved ${state.commentsDone.ids.length} comment${state.commentsDone.ids.length === 1 ? "" : "s"}`);
+    }
+    // everyone refetches shortly after, so reviewers see the resolved state even if realtime misses it
+    const t = setTimeout(() => void comments.refresh(), 1500);
+    return () => clearTimeout(t);
   }, [state.commentsDone]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [openFile, setOpenFile] = useState<{ path: string; line?: number; nonce: number } | null>(null);

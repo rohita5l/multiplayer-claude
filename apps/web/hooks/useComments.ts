@@ -31,13 +31,23 @@ export function useComments(sessionId: string) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loaded, setLoaded] = useState(false);
 
+  const refresh = useCallback(async () => {
+    try {
+      const r = await fetch(`/api/sessions/${sessionId}/comments`, { cache: "no-store" });
+      const d = await r.json();
+      if (d.comments) setComments(d.comments);
+    } catch {}
+    setLoaded(true);
+  }, [sessionId]);
+
   useEffect(() => {
     const supabase = createClient();
     let cancelled = false;
-    fetch(`/api/sessions/${sessionId}/comments`)
-      .then((r) => r.json())
-      .then((d) => { if (!cancelled && d.comments) { setComments(d.comments); setLoaded(true); } })
-      .catch(() => setLoaded(true));
+    const initial = setTimeout(() => void refresh(), 0);
+    // Fallbacks in case a realtime event is missed: refetch on focus and every 10s.
+    const onFocus = () => { if (!cancelled) void refresh(); };
+    window.addEventListener("focus", onFocus);
+    const poll = setInterval(() => { if (!cancelled && document.visibilityState === "visible") void refresh(); }, 10_000);
 
     const channel = supabase
       .channel(`comments:${sessionId}`)
@@ -51,8 +61,8 @@ export function useComments(sessionId: string) {
         });
       })
       .subscribe();
-    return () => { cancelled = true; supabase.removeChannel(channel); };
-  }, [sessionId]);
+    return () => { cancelled = true; clearTimeout(initial); window.removeEventListener("focus", onFocus); clearInterval(poll); supabase.removeChannel(channel); };
+  }, [sessionId, refresh]);
 
   const add = useCallback(async (input: NewComment) => {
     const r = await fetch(`/api/sessions/${sessionId}/comments`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
@@ -77,5 +87,5 @@ export function useComments(sessionId: string) {
   }, [threads]);
   const open = useMemo(() => threads.filter((c) => c.status === "open"), [threads]);
 
-  return { comments, threads, byFile, open, repliesOf, add, setStatus, loaded };
+  return { comments, threads, byFile, open, repliesOf, add, setStatus, refresh, loaded };
 }

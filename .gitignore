@@ -11,3 +11,5 @@ supabase/.temp
 supabase/.branches
 .env*
 !.env.example
+docs/APPROACH.md
+docs/session-transcript.md

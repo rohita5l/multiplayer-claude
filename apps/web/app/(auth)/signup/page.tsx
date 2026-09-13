@@ -1,5 +1,5 @@
 "use client";
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { signUp, type AuthResult } from "../actions";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function SignupPage() {
+function SignupPageInner() {
   const [state, action, pending] = useActionState<AuthResult, FormData>(signUp, {});
   const sp = useSearchParams();
   const next = sp.get("next") ?? "";
@@ -31,5 +31,13 @@ export default function SignupPage() {
         </form>
       </CardContent>
     </Card>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupPageInner />
+    </Suspense>
   );
 }

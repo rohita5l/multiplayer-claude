@@ -17,16 +17,13 @@ export interface StartEnv {
   claudeSessionId?: string | null;
 }
 
-/** The bundled agent server, read from the workspace at request time (works on Vercel via outputFileTracingIncludes). */
+/** The bundled agent server; `scripts/copy-agent.mjs` (prebuild/predev) places it in apps/web/agent-dist. */
 async function agentBundle(): Promise<Buffer> {
-  const candidates = [
-    path.join(process.cwd(), "agent-dist", "agent-server.mjs"),
-    path.join(process.cwd(), "..", "..", "packages", "agent-server", "dist", "agent-server.mjs"),
-  ];
-  for (const c of candidates) {
-    try { return await readFile(c); } catch {}
+  try {
+    return await readFile(path.join(process.cwd(), "agent-dist", "agent-server.mjs"));
+  } catch {
+    throw new Error("agent-server bundle not found; run `pnpm agent:build` (apps/web/scripts/copy-agent.mjs)");
   }
-  throw new Error("agent-server bundle not found; run `pnpm agent:build`");
 }
 
 export async function createSessionSandbox(name: string, repoUrl: string): Promise<Sandbox> {

@@ -1,14 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Copy, Loader2, Mail, Share2, Trash2, UserRound } from "lucide-react";
+import { Check, Copy, Loader2, Mail, Share2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ROLE_HINT, ROLE_LABEL, type Role } from "@mpc/protocol";
-import type { PresenceUser } from "@/hooks/usePresence";
+import { initialsOf, type PresenceUser } from "@/hooks/usePresence";
+import { colorFor } from "@/components/sidebar/PresenceAvatars";
 import { cn } from "@/lib/utils";
 
 type Member = { userId: string; role: Role; name: string | null; email: string | null };
@@ -29,7 +29,7 @@ function RolePicker({ value, onChange, disabled }: { value: Role; onChange: (r: 
   );
 }
 
-export function ShareDialog({ sessionId, present }: { sessionId: string; present: PresenceUser[] }) {
+export function ShareDialog({ sessionId, present, meId }: { sessionId: string; present: PresenceUser[]; meId?: string }) {
   const [open, setOpen] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
@@ -77,62 +77,78 @@ export function ShareDialog({ sessionId, present }: { sessionId: string; present
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" variant="outline" />}><Share2 className="size-4" /> Share</DialogTrigger>
-      <DialogContent className="sm:max-w-lg overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Share this session</DialogTitle>
-          <DialogDescription>Invites are tied to an email. The person signs in (or signs up) with that email and lands in the session. Links expire in 7 days.</DialogDescription>
+      <DialogContent className="sm:max-w-md overflow-hidden p-0 gap-0">
+        <DialogHeader className="px-5 pt-5 pb-3">
+          <DialogTitle>Share session</DialogTitle>
+          <DialogDescription>Invite people by email. They sign in with that address and land right here.</DialogDescription>
         </DialogHeader>
 
-        <div className="min-w-0 space-y-2">
-          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Invite someone</div>
-          <div className="relative min-w-0">
-            <Mail className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" type="email" className="w-full pl-8" onKeyDown={(e) => e.key === "Enter" && email && invite()} />
+        {/* Invite composer */}
+        <div className="px-5 pb-4">
+          <div className="flex min-w-0 items-center gap-1.5 rounded-lg border bg-background p-1.5 focus-within:ring-2 focus-within:ring-ring/40">
+            <Mail className="ml-1.5 size-4 shrink-0 text-muted-foreground" />
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@company.com"
+              type="email"
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              onKeyDown={(e) => e.key === "Enter" && email && invite()}
+            />
+            <RolePicker value={role} onChange={setRole} />
+            <Button size="sm" className="h-7" onClick={invite} disabled={busy || !email.trim()}>{busy ? <Loader2 className="size-4 animate-spin" /> : "Invite"}</Button>
           </div>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">Role <RolePicker value={role} onChange={setRole} /></div>
-            <Button size="sm" onClick={invite} disabled={busy || !email.trim()}>{busy ? <Loader2 className="size-4 animate-spin" /> : "Create invite link"}</Button>
-          </div>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">{ROLE_HINT[role]}. Links expire in 7 days.</p>
           {lastLink && (
-            <div className="flex min-w-0 items-center gap-2 rounded-md border bg-muted/40 px-2 py-1.5 text-xs">
-              <span className="min-w-0 flex-1 truncate font-mono" title={lastLink.url}>{lastLink.url}</span>
-              <span className="shrink-0 text-muted-foreground">for {lastLink.email}</span>
-              <Button size="icon" variant="ghost" className="size-6 shrink-0" onClick={() => { navigator.clipboard.writeText(lastLink.url); toast.success("Copied"); }} aria-label="Copy link"><Copy className="size-3.5" /></Button>
+            <div className="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
+              <div className="flex items-center gap-2 text-sm"><Check className="size-4 text-emerald-500" /> Invite link ready for <span className="font-medium">{lastLink.email}</span></div>
+              <div className="mt-2 flex min-w-0 items-center gap-2">
+                <code className="min-w-0 flex-1 truncate rounded-md bg-background px-2 py-1.5 text-[11px]" title={lastLink.url}>{lastLink.url}</code>
+                <Button size="sm" variant="secondary" className="h-8 shrink-0" onClick={() => { navigator.clipboard.writeText(lastLink.url); toast.success("Copied"); }}><Copy className="size-3.5" /> Copy</Button>
+              </div>
+              <p className="mt-1.5 text-[11px] text-muted-foreground">Send this to them however you like. It only works for that email.</p>
             </div>
           )}
         </div>
 
-        <div className="min-w-0 space-y-1.5">
-          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">People</div>
-          <div className="min-w-0 divide-y rounded-md border">
+        {/* People */}
+        <div className="border-t bg-muted/30 px-5 py-4">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">People</div>
+            <div className="text-[11px] text-muted-foreground">{members.length} member{members.length === 1 ? "" : "s"}{invites.length ? ` · ${invites.length} pending` : ""}</div>
+          </div>
+          <ul className="space-y-1">
             {members.map((m) => (
-              <div key={m.userId} className="flex min-w-0 items-center gap-2 px-2 py-1.5 text-sm">
-                <UserRound className="size-4 shrink-0 text-muted-foreground" />
+              <li key={m.userId} className="flex min-w-0 items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-background/60">
+                <span className={cn("relative inline-flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white", colorFor(m.userId))}>
+                  {initialsOf(m.name ?? m.email)}
+                  {online.has(m.userId) && <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-green-500 ring-2 ring-background" />}
+                </span>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate">{m.name ?? m.email ?? "Member"} {online.has(m.userId) && <span className="ml-1 inline-block size-1.5 rounded-full bg-green-500 align-middle" />}</div>
+                  <div className="truncate text-sm">{m.name ?? m.email ?? "Member"}{m.userId === meId && <span className="text-muted-foreground"> (you)</span>}</div>
                   {m.email && <div className="truncate text-[11px] text-muted-foreground">{m.email}</div>}
                 </div>
                 {m.role === "owner" ? <Badge variant="secondary">Owner</Badge> : (
                   <>
                     <RolePicker value={m.role} onChange={(r) => setMemberRole(m.userId, r)} />
-                    <Button size="icon" variant="ghost" className="size-7 text-muted-foreground" onClick={() => remove({ userId: m.userId })} aria-label="Remove"><Trash2 className="size-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="size-7 text-muted-foreground hover:text-destructive" onClick={() => remove({ userId: m.userId })} aria-label="Remove"><Trash2 className="size-3.5" /></Button>
                   </>
                 )}
-              </div>
+              </li>
             ))}
             {invites.map((i) => (
-              <div key={i.email} className="flex min-w-0 items-center gap-2 px-2 py-1.5 text-sm">
-                <Mail className="size-4 shrink-0 text-muted-foreground" />
+              <li key={i.email} className="flex min-w-0 items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-background/60">
+                <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-dashed text-muted-foreground"><Mail className="size-3.5" /></span>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate">{i.email}</div>
-                  <div className="text-[11px] text-muted-foreground">Invited · not joined yet</div>
+                  <div className="truncate text-sm">{i.email}</div>
+                  <div className="text-[11px] text-muted-foreground">Invited as {ROLE_LABEL[i.role].toLowerCase()} · not joined yet</div>
                 </div>
-                <Badge variant="outline">{ROLE_LABEL[i.role]}</Badge>
-                <Button size="icon" variant="ghost" className="size-7 text-muted-foreground" onClick={() => remove({ email: i.email })} aria-label="Revoke invite"><Trash2 className="size-3.5" /></Button>
-              </div>
+                <Badge variant="outline" className="text-muted-foreground">Pending</Badge>
+                <Button size="icon" variant="ghost" className="size-7 text-muted-foreground hover:text-destructive" onClick={() => remove({ email: i.email })} aria-label="Revoke invite"><Trash2 className="size-3.5" /></Button>
+              </li>
             ))}
-            {members.length === 0 && invites.length === 0 && <div className="px-2 py-3 text-xs text-muted-foreground">Loading…</div>}
-          </div>
+            {members.length === 0 && invites.length === 0 && <li className="px-2 py-3 text-xs text-muted-foreground">Loading…</li>}
+          </ul>
         </div>
       </DialogContent>
     </Dialog>

@@ -37,7 +37,7 @@ export async function signUp(_prev: AuthResult, formData: FormData): Promise<Aut
   const displayName = String(formData.get("displayName") ?? "").trim();
   const next = String(formData.get("next") ?? "");
   const code = String(formData.get("inviteCode") ?? "");
-  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  if (password.length < 12 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password)) return { error: "Password must be at least 12 characters with upper and lower case letters and a number." };
   const denied = await signupAllowed(email, code, next);
   if (denied) return { error: denied };
   const supabase = await createClient();

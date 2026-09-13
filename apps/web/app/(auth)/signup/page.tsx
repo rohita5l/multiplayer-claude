@@ -21,7 +21,7 @@ function SignupPageInner() {
           <input type="hidden" name="next" value={next} />
           <div className="space-y-1.5"><Label htmlFor="displayName">Name</Label><Input id="displayName" name="displayName" placeholder="Shown to collaborators" required /></div>
           <div className="space-y-1.5"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" autoComplete="email" defaultValue={email} required /></div>
-          <div className="space-y-1.5"><Label htmlFor="password">Password</Label><Input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required /></div>
+          <div className="space-y-1.5"><Label htmlFor="password">Password</Label><Input id="password" name="password" type="password" autoComplete="new-password" minLength={12} required /><p className="text-[11px] text-muted-foreground">12+ characters with upper and lower case letters and a number.</p></div>
           {!next.startsWith("/join/") && (
             <div className="space-y-1.5"><Label htmlFor="inviteCode">Invite code</Label><Input id="inviteCode" name="inviteCode" placeholder="Ask the team for a code" autoComplete="off" /></div>
           )}

@@ -77,36 +77,37 @@ export function ShareDialog({ sessionId, present }: { sessionId: string; present
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" variant="outline" />}><Share2 className="size-4" /> Share</DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg overflow-hidden">
         <DialogHeader>
           <DialogTitle>Share this session</DialogTitle>
           <DialogDescription>Invites are tied to an email. The person signs in (or signs up) with that email and lands in the session. Links expire in 7 days.</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2">
           <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Invite someone</div>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Mail className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-              <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" type="email" className="pl-8" onKeyDown={(e) => e.key === "Enter" && email && invite()} />
-            </div>
-            <RolePicker value={role} onChange={setRole} />
-            <Button onClick={invite} disabled={busy || !email.trim()}>{busy ? <Loader2 className="size-4 animate-spin" /> : "Create link"}</Button>
+          <div className="relative min-w-0">
+            <Mail className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" type="email" className="w-full pl-8" onKeyDown={(e) => e.key === "Enter" && email && invite()} />
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">Role <RolePicker value={role} onChange={setRole} /></div>
+            <Button size="sm" onClick={invite} disabled={busy || !email.trim()}>{busy ? <Loader2 className="size-4 animate-spin" /> : "Create invite link"}</Button>
           </div>
           {lastLink && (
-            <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-2 py-1.5 text-xs">
-              <span className="truncate font-mono flex-1">{lastLink.url}</span>
-              <Button size="icon" variant="ghost" className="size-6" onClick={() => { navigator.clipboard.writeText(lastLink.url); toast.success("Copied"); }} aria-label="Copy link"><Copy className="size-3.5" /></Button>
+            <div className="flex min-w-0 items-center gap-2 rounded-md border bg-muted/40 px-2 py-1.5 text-xs">
+              <span className="min-w-0 flex-1 truncate font-mono" title={lastLink.url}>{lastLink.url}</span>
+              <span className="shrink-0 text-muted-foreground">for {lastLink.email}</span>
+              <Button size="icon" variant="ghost" className="size-6 shrink-0" onClick={() => { navigator.clipboard.writeText(lastLink.url); toast.success("Copied"); }} aria-label="Copy link"><Copy className="size-3.5" /></Button>
             </div>
           )}
         </div>
 
-        <div className="space-y-1.5">
+        <div className="min-w-0 space-y-1.5">
           <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">People</div>
-          <div className="divide-y rounded-md border">
+          <div className="min-w-0 divide-y rounded-md border">
             {members.map((m) => (
-              <div key={m.userId} className="flex items-center gap-2 px-2 py-1.5 text-sm">
-                <UserRound className="size-4 text-muted-foreground" />
+              <div key={m.userId} className="flex min-w-0 items-center gap-2 px-2 py-1.5 text-sm">
+                <UserRound className="size-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate">{m.name ?? m.email ?? "Member"} {online.has(m.userId) && <span className="ml-1 inline-block size-1.5 rounded-full bg-green-500 align-middle" />}</div>
                   {m.email && <div className="truncate text-[11px] text-muted-foreground">{m.email}</div>}
@@ -120,8 +121,8 @@ export function ShareDialog({ sessionId, present }: { sessionId: string; present
               </div>
             ))}
             {invites.map((i) => (
-              <div key={i.email} className="flex items-center gap-2 px-2 py-1.5 text-sm">
-                <Mail className="size-4 text-muted-foreground" />
+              <div key={i.email} className="flex min-w-0 items-center gap-2 px-2 py-1.5 text-sm">
+                <Mail className="size-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate">{i.email}</div>
                   <div className="text-[11px] text-muted-foreground">Invited · not joined yet</div>

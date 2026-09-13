@@ -17,7 +17,7 @@ export type ThinkingBlock = { type: "thinking"; text: string; final?: boolean };
 export type Block = TextBlock | ToolBlock | ThinkingBlock;
 
 export type TranscriptItem =
-  | { kind: "user"; id: string; text: string; at: number; synthetic?: boolean; from?: { userId: string; name: string } }
+  | { kind: "user"; id: string; text: string; at: number; synthetic?: boolean; from?: { userId: string; name: string }; attachedComments?: { id: string; filePath: string; lineStart: number; lineEnd: number; body: string; authorName: string }[] }
   | { kind: "assistant"; id: string; blocks: Block[]; streaming: boolean; at: number }
   | { kind: "result"; id: string; text: string; costUsd?: number; numTurns?: number; isError: boolean; at: number }
   | { kind: "system"; id: string; text: string; at: number };
@@ -72,7 +72,7 @@ export function reduceTranscript(state: TranscriptState, ev: AgentEvent): Transc
       if (!ev.from) text = text.replace(/^\[[^\]\n]{1,80}\]: /, "");
       // internal machinery (subagent notifications, system reminders) — not for the chat
       if (/^\s*<(task-notification|system-reminder|local-command)/.test(text)) return state;
-      items.push({ kind: "user", id: (ev.uuid as string) ?? nid(), text, at, synthetic: Boolean(ev.isSynthetic), from: ev.from as { userId: string; name: string } | undefined });
+      items.push({ kind: "user", id: (ev.uuid as string) ?? nid(), text, at, synthetic: Boolean(ev.isSynthetic), from: ev.from as { userId: string; name: string } | undefined, attachedComments: ev.attachedComments as Extract<TranscriptItem, { kind: "user" }>["attachedComments"] });
       return { ...state, items };
     }
 

@@ -53,6 +53,16 @@ export function MessageList({ items, onOpenFile }: { items: TranscriptItem[]; on
                   <div className="flex flex-col items-end gap-0.5">
                     {it.from?.name && <span className="text-[11px] text-muted-foreground">{it.from.name}</span>}
                     <div className="rounded-2xl rounded-tr-sm bg-muted px-3 py-2 text-sm whitespace-pre-wrap">{it.text}</div>
+                    {it.attachedComments && it.attachedComments.length > 0 && (
+                      <details className="max-w-full text-[11px] text-muted-foreground">
+                        <summary className="cursor-pointer select-none">with {it.attachedComments.length} review comment{it.attachedComments.length === 1 ? "" : "s"}</summary>
+                        <ul className="mt-1 space-y-1 rounded-md border bg-background/60 px-2 py-1.5 text-left">
+                          {it.attachedComments.map((c) => (
+                            <li key={c.id}><span className="font-mono">{c.filePath.split("/").pop()}:{c.lineStart}</span> · {c.authorName}: {c.body}</li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
                   </div>
                   <div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-secondary"><User className="size-3.5" /></div>
                 </div>

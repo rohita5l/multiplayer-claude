@@ -247,14 +247,15 @@ export class AgentSession {
     return fallback.length > 40 ? fallback : this.lastAssistantText || fallback;
   }
 
-  async send(text: string, from: { userId: string; name: string; role?: string }, opts: { planFirst?: boolean } = {}) {
+  async send(text: string, from: { userId: string; name: string; role?: string }, opts: { planFirst?: boolean; display?: string; attachedComments?: ReviewComment[] } = {}) {
     if (this.state === "error") throw new Error("agent is in error state");
     // "plan first" in the message -> plan mode for this turn; the owner approves from the Plan card.
     const wantsPlan = opts.planFirst || /\b(plan (first|it|this|before)|(make|write|create|propose|draft|give me) (a |the )?plan)\b/i.test(text);
     if (wantsPlan && this.mode !== "plan") await this.setMode("plan");
     this.setState("running");
     // Broadcast + record the user turn ourselves so every client (and reconnecting clients) sees it with the sender's name.
-    const ev: AgentEvent = { type: "user", uuid: randomUUID(), session_id: this.claudeSessionId ?? undefined, message: { role: "user", content: text }, parent_tool_use_id: null, from: { userId: from.userId, name: from.name } };
+    // What people see (the sender's own words) vs. what Claude gets (may include attached review comments).
+    const ev: AgentEvent = { type: "user", uuid: randomUUID(), session_id: this.claudeSessionId ?? undefined, message: { role: "user", content: opts.display ?? text }, parent_tool_use_id: null, from: { userId: from.userId, name: from.name }, attachedComments: opts.attachedComments };
     this.history.push(ev);
     this.host.broadcast(ev);
     // Claude sees who is speaking (the session is shared by an author and reviewers).
@@ -274,7 +275,7 @@ export class AgentSession {
     const intro = userText?.trim() ? `${userText.trim()}\n\nHere are the open review comments from the session:` : "Please address the following review comments.";
     const text = `${intro}\n\n${lines.join("\n")}\n\nFor each comment, make the change (or explain why not), then finish with a short summary per comment.`;
     this.pendingCommentIds = comments.map((c) => c.id);
-    void this.send(text, from);
+    void this.send(text, from, { display: userText?.trim() || `Address ${comments.length} open review comment${comments.length === 1 ? "" : "s"}`, attachedComments: comments });
   }
 
   async interrupt() {

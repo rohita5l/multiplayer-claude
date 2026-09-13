@@ -91,8 +91,10 @@ watchRepo(REPO_DIR, (paths) => {
 
 const server = http.createServer((req, res) => {
   if (req.url?.startsWith("/health")) {
+    // Details (incl. the Claude session id) only for the control plane, which knows the session secret.
+    const authed = (req.headers.authorization ?? "") === `Bearer ${SECRET}`;
     res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ ok: true, sessionId: SESSION_ID, state: agent.state, claudeSessionId: agent.claudeSessionId, clients: clients.size, uptimeMs: Date.now() - BOOT }));
+    res.end(JSON.stringify(authed ? { ok: true, sessionId: SESSION_ID, state: agent.state, claudeSessionId: agent.claudeSessionId, clients: clients.size, uptimeMs: Date.now() - BOOT } : { ok: true }));
     return;
   }
   res.writeHead(404);

@@ -60,9 +60,9 @@ export function sandboxUrl(sandbox: Sandbox): string {
   return sandbox.domain(AGENT_PORT);
 }
 
-export async function healthy(url: string, timeoutMs = 2500): Promise<Record<string, unknown> | null> {
+export async function healthy(url: string, secret?: string, timeoutMs = 2500): Promise<Record<string, unknown> | null> {
   try {
-    const r = await fetch(`${url}/health`, { signal: AbortSignal.timeout(timeoutMs), cache: "no-store" });
+    const r = await fetch(`${url}/health`, { signal: AbortSignal.timeout(timeoutMs), cache: "no-store", headers: secret ? { authorization: `Bearer ${secret}` } : {} });
     if (!r.ok) return null;
     return (await r.json()) as Record<string, unknown>;
   } catch {
@@ -103,13 +103,13 @@ export async function startAgentServer(sandbox: Sandbox, start: StartEnv): Promi
 /** Ensure the sandbox is running with a healthy agent server; returns its public URL and health info. */
 export async function ensureAgentServer(sandbox: Sandbox, start: StartEnv): Promise<{ url: string; health: Record<string, unknown> }> {
   const url = sandboxUrl(sandbox);
-  const h = await healthy(url);
+  const h = await healthy(url, start.sessionSecret);
   if (h) return { url, health: h };
   await startAgentServer(sandbox, start);
   const deadline = Date.now() + 60_000;
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, 250));
-    const h2 = await healthy(url);
+    const h2 = await healthy(url, start.sessionSecret);
     if (h2) return { url, health: h2 };
   }
   throw new Error("agent server did not become healthy in 60s");

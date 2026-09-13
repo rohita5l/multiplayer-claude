@@ -1,0 +1,23 @@
+{
+  "name": "multiplayer-claude",
+  "private": true,
+  "packageManager": "pnpm@12.3.4",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "agent:build": "pnpm --filter agent-server build",
+    "snapshot:build": "pnpm --filter agent-server build && tsx scripts/build-snapshot.ts",
+    "spike": "tsx scripts/spike-sandbox-ws.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@vercel/sandbox": "^3.2.1",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.13",
+    "typescript": "^5",
+    "ws": "^8.21.3",
+    "@types/ws": "^8"
+  }
+}

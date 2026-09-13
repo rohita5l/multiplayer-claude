@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Settings, AlertTriangle } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail } from "@/components/ui/sidebar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,7 +14,7 @@ import type { SessionListItem } from "@/lib/sessions";
 import { signOut } from "@/app/(auth)/actions";
 import { cn } from "@/lib/utils";
 
-export function SessionsSidebar({ sessions, me, keyLast4 }: { sessions: SessionListItem[]; me: { id: string; email: string | null; name: string; isAnonymous: boolean }; keyLast4: string | null }) {
+export function SessionsSidebar({ sessions, me }: { sessions: SessionListItem[]; me: { id: string; email: string | null; name: string; isAnonymous: boolean } }) {
   const pathname = usePathname();
   const activeId = pathname.startsWith("/s/") ? pathname.split("/")[2] : null;
   const presence = usePresenceMap(sessions.map((s) => s.id));
@@ -26,7 +26,7 @@ export function SessionsSidebar({ sessions, me, keyLast4 }: { sessions: SessionL
       <Sidebar collapsible="offcanvas">
         <SidebarHeader className="gap-2">
           <Link href="/" className="px-2 pt-1 text-sm font-semibold tracking-tight">Multiplayer Claude</Link>
-          {!me.isAnonymous && <NewSessionButton size="sm" className="w-full justify-start" variant="outline" hasKey={Boolean(keyLast4)} />}
+          {!me.isAnonymous && <NewSessionButton size="sm" className="w-full justify-start" variant="outline" />}
         </SidebarHeader>
         <SidebarContent>
           {mine.length > 0 && (
@@ -49,19 +49,6 @@ export function SessionsSidebar({ sessions, me, keyLast4 }: { sessions: SessionL
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
-            {!me.isAnonymous && (
-              <SidebarMenuItem>
-                <SidebarMenuButton render={<Link href="/settings/claude" />} size="sm" className={cn("h-auto py-1.5 items-start", keyLast4 ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400")}>
-                  <>
-                    {keyLast4 ? <span className="mt-1.5 size-2 rounded-full bg-green-500 shrink-0 mx-1" /> : <AlertTriangle className="mt-0.5 size-4 shrink-0" />}
-                    <span className="min-w-0">
-                      <span className="block truncate">{keyLast4 ? "Claude connected" : "Connect your Claude account"}</span>
-                      {!keyLast4 && <span className="block text-[11px] font-normal text-muted-foreground">to create new sessions</span>}
-                    </span>
-                  </>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )}
             <SidebarMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger render={<SidebarMenuButton size="lg" />}>
@@ -74,9 +61,6 @@ export function SessionsSidebar({ sessions, me, keyLast4 }: { sessions: SessionL
                   </>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="top" align="start" className="w-56">
-                  {!me.isAnonymous && <DropdownMenuItem render={<Link href="/settings/claude" />}><Settings className="size-4" /> Claude settings</DropdownMenuItem>}
-                  {me.isAnonymous && <DropdownMenuItem render={<Link href="/signup" />}>Create an account</DropdownMenuItem>}
-                  <DropdownMenuSeparator />
                   <div className="px-1 py-1"><ThemeToggle /></div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut()}><LogOut className="size-4" /> Sign out</DropdownMenuItem>

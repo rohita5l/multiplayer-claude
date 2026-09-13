@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { handler, json, error, requireUser } from "@/lib/api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { decrypt } from "@/lib/crypto";
+import { getPlatformCredential } from "@/lib/claude-credential";
 import { after } from "next/server";
 import { createSessionSandbox, ensureAgentServer, getSessionSandbox } from "@/lib/sandbox";
 import { claimWarmSandbox, prewarm } from "@/lib/pool";
@@ -29,8 +29,7 @@ export const POST = handler(async (req: Request) => {
   if (!/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+$/.test(repoUrl)) return error("Repo must be a public GitHub URL like https://github.com/org/repo");
 
   const admin = createAdminClient();
-  const { data: profile } = await admin.from("profiles").select("anthropic_key_ciphertext, display_name, email").eq("id", user.id).single();
-  if (!profile?.anthropic_key_ciphertext) return error("Connect your Anthropic API key first.", 412);
+  const { data: profile } = await admin.from("profiles").select("display_name, email").eq("id", user.id).single();
 
   const secret = randomBytes(32).toString("base64url");
   const { data: session, error: insErr } = await admin
@@ -39,14 +38,14 @@ export const POST = handler(async (req: Request) => {
     .select("*")
     .single();
   if (insErr || !session) return error(insErr?.message ?? "insert failed", 500);
-  await admin.from("session_members").insert({ session_id: session.id, user_id: user.id, role: "owner", display_name: profile.display_name ?? profile.email ?? "Owner" });
+  await admin.from("session_members").insert({ session_id: session.id, user_id: user.id, role: "owner", display_name: profile?.display_name ?? profile?.email ?? "Owner" });
 
   try {
     // Fast path: a pre-booted sandbox from the warm pool (same snapshot/repo). Fallback: cold boot from snapshot.
     const warm = repoUrl === env.demoRepo() ? await claimWarmSandbox() : null;
     const name = warm ?? `mpc-${session.id}`;
     const sandbox = warm ? await getSessionSandbox(warm) : await createSessionSandbox(name, repoUrl);
-    const { url } = await ensureAgentServer(sandbox, { sessionId: session.id, sessionSecret: secret, anthropicApiKey: decrypt(profile.anthropic_key_ciphertext) });
+    const { url } = await ensureAgentServer(sandbox, { sessionId: session.id, sessionSecret: secret, anthropicApiKey: getPlatformCredential() });
     await admin.from("sessions").update({ sandbox_name: name, ws_url: url, status: "running", last_active_at: new Date().toISOString() }).eq("id", session.id);
     after(() => prewarm()); // refill the pool after responding
   } catch (e) {

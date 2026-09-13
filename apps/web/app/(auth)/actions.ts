@@ -43,8 +43,7 @@ export async function signUp(_prev: AuthResult, formData: FormData): Promise<Aut
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({ email, password, options: { data: { display_name: displayName || email.split("@")[0] } } });
   if (error) return { error: error.message };
-  // Invited users go straight to the session; new authors connect Claude first.
-  redirect(next.startsWith("/join/") ? next : "/settings/claude?welcome=1");
+  redirect(next.startsWith("/join/") ? next : "/");
 }
 
 export async function signOut() {

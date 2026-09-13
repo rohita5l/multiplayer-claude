@@ -21,7 +21,7 @@ supabase/                config + migrations
 
 ```bash
 pnpm install
-cp apps/web/.env.example apps/web/.env.local   # fill in Supabase keys, APP_ENCRYPTION_KEY, SANDBOX_SNAPSHOT_ID
+cp apps/web/.env.example apps/web/.env.local   # fill in Supabase keys, PLATFORM_CLAUDE_CREDENTIAL, SANDBOX_SNAPSHOT_ID, SIGNUP_INVITE_CODE
 # Sandboxes from localhost need VERCEL_TOKEN + VERCEL_TEAM_ID + VERCEL_PROJECT_ID in apps/web/.env.local
 pnpm dev                                        # http://localhost:3000
 ```
@@ -32,7 +32,7 @@ pnpm dev                                        # http://localhost:3000
 
 ## Demo script
 
-1. Sign up → paste an Anthropic API key on **Connect Claude** (validated, stored encrypted).
+1. Sign up with the invite code. Sessions run on the operator's shared Claude credential (`PLATFORM_CLAUDE_CREDENTIAL`).
 2. **New session** (repo defaults to `vercel/shop`). The sandbox boots from the snapshot in a few seconds.
 3. Ask: *“Add a ‘Free shipping on orders over $50’ banner to the product page in apps/template.”* Watch tool calls, file changes and the Diff tab update live.
 4. **Share** → open the link in an incognito window, join with a name (no account), click a line in the diff and comment.
@@ -41,7 +41,7 @@ pnpm dev                                        # http://localhost:3000
 
 ## How it works
 
-- `POST /api/sessions` creates the row + sandbox, writes the agent bundle in, starts it with the owner's decrypted key, and stores the public URL.
+- `POST /api/sessions` creates the row + sandbox, writes the agent bundle in, starts it with the shared Claude credential, and stores the public URL.
 - `POST /api/sessions/[id]/connect` resumes the sandbox if needed (health-check → restart with `CLAUDE_SESSION_ID` so the SDK `resume`s) and mints a short-lived HMAC ticket; the browser opens `wss://…vercel.run/ws?ticket=…`.
 - The agent server holds one `query()` with an async input queue, broadcasts every SDK message, runs `git diff` after each edit, and reports the Claude session id back for later resume.
 - Comments live in Postgres (RLS: session members) and stream to everyone via Realtime; “Address comments” composes one user turn listing `file:line — comment`.

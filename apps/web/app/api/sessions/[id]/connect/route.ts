@@ -1,6 +1,6 @@
 import { handler, json, error, requireUser } from "@/lib/api";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { decrypt } from "@/lib/crypto";
+import { getPlatformCredential } from "@/lib/claude-credential";
 import { ensureAgentServer, getSessionSandbox } from "@/lib/sandbox";
 import { signTicket } from "@mpc/protocol/ticket";
 
@@ -15,8 +15,6 @@ export const POST = handler(async (_req: Request, { params }: Ctx) => {
   if (!member) return error("not a member of this session", 403);
   const { data: session } = await admin.from("sessions").select("*").eq("id", id).single();
   if (!session) return error("not found", 404);
-  const { data: owner } = await admin.from("profiles").select("anthropic_key_ciphertext").eq("id", session.owner_id).single();
-  if (!owner?.anthropic_key_ciphertext) return error("The session owner has no Anthropic key connected.", 412);
 
   let wsUrl: string;
   let claudeSessionId: string | null = session.claude_session_id;
@@ -26,7 +24,7 @@ export const POST = handler(async (_req: Request, { params }: Ctx) => {
     const r = await ensureAgentServer(sandbox, {
       sessionId: id,
       sessionSecret: session.session_secret,
-      anthropicApiKey: decrypt(owner.anthropic_key_ciphertext),
+      anthropicApiKey: getPlatformCredential(),
       claudeSessionId: session.claude_session_id,
     });
     wsUrl = r.url;

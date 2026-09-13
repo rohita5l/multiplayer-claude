@@ -1,15 +1,12 @@
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/server";
-import { getProfile, listSessions } from "@/lib/sessions";
+import { listSessions } from "@/lib/sessions";
 import { NewSessionButton } from "@/components/sidebar/NewSessionDialog";
 
 export default async function Home() {
   const user = await getUser();
   if (!user) redirect("/login");
-  const [profile, sessions] = await Promise.all([getProfile(user.id), listSessions()]);
-  const hasKey = Boolean(profile?.anthropic_key_last4);
-  // New authors go connect Claude first; invited users with shared sessions stay here.
-  if (!hasKey && sessions.length === 0) redirect("/settings/claude");
+  const sessions = await listSessions();
   return (
     <div className="h-full flex items-center justify-center p-8">
       <div className="max-w-md text-center space-y-4">
@@ -18,10 +15,10 @@ export default async function Home() {
           Each session runs a real Claude Code agent in its own cloud sandbox. Invite reviewers with a link; they see the transcript, the plan, and every file change live, and can comment on any line.
         </p>
         {user.isAnonymous ? (
-          <p className="text-sm text-muted-foreground">Sessions shared with you are in the sidebar. Connect a Claude Code token in settings to start your own.</p>
+          <p className="text-sm text-muted-foreground">Sessions shared with you are in the sidebar.</p>
         ) : (
           <div className="flex justify-center">
-            <NewSessionButton size="default" hasKey={hasKey} />
+            <NewSessionButton size="default" />
           </div>
         )}
       </div>

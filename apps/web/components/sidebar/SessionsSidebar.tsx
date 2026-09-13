@@ -51,10 +51,13 @@ export function SessionsSidebar({ sessions, me, keyLast4 }: { sessions: SessionL
           <SidebarMenu>
             {!me.isAnonymous && (
               <SidebarMenuItem>
-                <SidebarMenuButton render={<Link href="/settings/claude" />} size="sm" className={cn(keyLast4 ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400")}>
+                <SidebarMenuButton render={<Link href="/settings/claude" />} size="sm" className={cn("h-auto py-1.5 items-start", keyLast4 ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400")}>
                   <>
-                    {keyLast4 ? <span className="size-2 rounded-full bg-green-500 shrink-0 mx-1" /> : <AlertTriangle className="size-4" />}
-                    <span className="truncate">{keyLast4 ? "Claude connected" : "Connect Claude"}</span>
+                    {keyLast4 ? <span className="mt-1.5 size-2 rounded-full bg-green-500 shrink-0 mx-1" /> : <AlertTriangle className="mt-0.5 size-4 shrink-0" />}
+                    <span className="min-w-0">
+                      <span className="block truncate">{keyLast4 ? "Claude connected" : "Connect your Claude account"}</span>
+                      {!keyLast4 && <span className="block text-[11px] font-normal text-muted-foreground">to create new sessions</span>}
+                    </span>
                   </>
                 </SidebarMenuButton>
               </SidebarMenuItem>

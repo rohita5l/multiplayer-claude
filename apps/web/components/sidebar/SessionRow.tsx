@@ -13,7 +13,7 @@ import type { SessionListItem } from "@/lib/sessions";
 import { repoShort } from "@/lib/repo";
 import { cn } from "@/lib/utils";
 
-const dot: Record<string, string> = { running: "bg-green-500", creating: "bg-amber-400 animate-pulse", stopped: "bg-muted-foreground/40", error: "bg-red-500" };
+const dot: Record<string, string> = { running: "bg-green-500", creating: "bg-amber-400 animate-pulse", stopped: "bg-muted-foreground/40", archived: "bg-muted-foreground/25", error: "bg-red-500" };
 
 export function SessionRow({ session, active, present, isOwner }: { session: SessionListItem; active: boolean; present: PresenceUser[]; isOwner: boolean }) {
   const router = useRouter();

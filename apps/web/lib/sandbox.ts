@@ -35,7 +35,7 @@ export async function createSessionSandbox(name: string, repoUrl: string): Promi
     ports: [AGENT_PORT],
     timeout: SESSION_TIMEOUT_MS,
     persistent: true,
-    keepLastSnapshots: { count: 1, deleteEvicted: true }, // Hobby: 15 GB lifetime snapshot cap
+    keepLastSnapshots: { count: 1 }, // never deleteEvicted: it removes the base snapshot this sandbox came from
     resources: { vcpus: 2 },
   } as Parameters<typeof Sandbox.create>[0]);
 

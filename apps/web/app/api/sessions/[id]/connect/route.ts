@@ -1,7 +1,7 @@
 import { handler, json, error, requireUser } from "@/lib/api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPlatformCredential } from "@/lib/claude-credential";
-import { ensureAgentServer, getSessionSandbox } from "@/lib/sandbox";
+import { createSessionSandbox, ensureAgentServer, getSessionSandbox } from "@/lib/sandbox";
 import { signTicket } from "@mpc/protocol/ticket";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -19,13 +19,22 @@ export const POST = handler(async (_req: Request, { params }: Ctx) => {
   let wsUrl: string;
   let claudeSessionId: string | null = session.claude_session_id;
   try {
-    if (!session.sandbox_name) throw new Error("session has no sandbox");
-    const sandbox = await getSessionSandbox(session.sandbox_name);
+    let sandboxName: string = session.sandbox_name;
+    let sandbox;
+    if (!sandboxName) {
+      // Archived after inactivity: start a fresh sandbox (files/transcript from the old one are gone).
+      sandboxName = `mpc-${id}-${Date.now().toString(36)}`;
+      sandbox = await createSessionSandbox(sandboxName, session.repo_url);
+      claudeSessionId = null;
+      await admin.from("sessions").update({ sandbox_name: sandboxName, claude_session_id: null }).eq("id", id);
+    } else {
+      sandbox = await getSessionSandbox(sandboxName);
+    }
     const r = await ensureAgentServer(sandbox, {
       sessionId: id,
       sessionSecret: session.session_secret,
       anthropicApiKey: getPlatformCredential(),
-      claudeSessionId: session.claude_session_id,
+      claudeSessionId,
     });
     wsUrl = r.url;
     // The agent server also reports its Claude session id here (the sandbox can't always reach the control plane, e.g. localhost).

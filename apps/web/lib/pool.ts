@@ -6,6 +6,7 @@ import { randomBytes } from "node:crypto";
 import { Sandbox } from "@vercel/sandbox";
 import { createAdminClient } from "./supabase/admin";
 import { createSessionSandbox, deleteSessionSandbox } from "./sandbox";
+import { reapIdleSessions } from "./reaper";
 import { env } from "./env";
 
 const POOL_SIZE = 1;
@@ -29,6 +30,7 @@ export async function claimWarmSandbox(): Promise<string | null> {
 /** Ensure POOL_SIZE sandboxes are booting/ready. Safe to call often; cheap when the pool is full. */
 export async function prewarm(): Promise<void> {
   if (!env.snapshotId()) return;
+  await reapIdleSessions().catch(() => {});
   await trimPool();
   const admin = createAdminClient();
   // Atomic reservation (advisory lock in Postgres): returns null when the pool is already full/booting.
